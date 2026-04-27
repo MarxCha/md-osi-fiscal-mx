@@ -1,0 +1,22 @@
+extends: default
+
+rules:
+  line-length:
+    max: 160
+    level: warning
+  document-start: disable
+  truthy:
+    allowed-values: ["true", "false"]
+    check-keys: false
+  comments:
+    require-starting-space: true
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  indentation:
+    spaces: 2
+    indent-sequences: true
+
+ignore: |
+  implementations/
+  tests/
+  .github/

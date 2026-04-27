@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://md-osi-fiscal-mx/schemas/regla.schema.json",
+  "title": "Regla de negocio (RN-XXX)",
+  "type": "object",
+  "required": [
+    "id",
+    "nombre",
+    "version",
+    "estado",
+    "descripcion",
+    "ambito",
+    "condiciones",
+    "ejemplos",
+    "historial"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^RN-[0-9]{3}$",
+      "description": "Identificador único, formato RN-XXX"
+    },
+    "nombre": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?$",
+      "description": "Versión SemVer de la regla"
+    },
+    "estado": {
+      "type": "string",
+      "enum": ["stable", "beta", "deprecated", "experimental"]
+    },
+    "descripcion": {
+      "type": "string",
+      "minLength": 10
+    },
+    "base_legal": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "ley": {
+            "type": "string",
+            "enum": ["LISR", "LIVA", "CFF", "RISR", "RIVA", "RCFF", "LFDC", "LFP"]
+          },
+          "articulo": { "type": ["string", "number"] },
+          "parrafo": { "type": ["string", "number"] },
+          "fraccion": { "type": ["string", "number"] },
+          "inciso": { "type": "string" },
+          "rmf": { "type": ["string", "object"] },
+          "criterio_normativo": { "type": "string" },
+          "tesis": { "type": "string" },
+          "texto": { "type": "string" }
+        }
+      }
+    },
+    "base_practica": {
+      "type": "string",
+      "description": "Justificación operativa cuando no existe base legal explícita"
+    },
+    "ambito": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "iva_cobrado",
+          "iva_pagado",
+          "iva_acreditable",
+          "isr_personas_morales",
+          "isr_personas_fisicas",
+          "diot",
+          "nomina",
+          "carta_porte",
+          "materialidad",
+          "anexo_20",
+          "general"
+        ]
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["nombre", "tipo"],
+        "properties": {
+          "nombre": { "type": "string" },
+          "tipo": { "type": "string" },
+          "valores": { "type": "array" },
+          "descripcion": { "type": "string" }
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["nombre", "tipo"],
+        "properties": {
+          "nombre": { "type": "string" },
+          "tipo": { "type": "string" },
+          "valores": { "type": "array" },
+          "descripcion": { "type": "string" }
+        }
+      }
+    },
+    "condiciones": {
+      "type": "string",
+      "minLength": 5,
+      "description": "Lógica determinista de la regla en pseudo-código o prosa estructurada"
+    },
+    "ejemplos": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["input", "output"],
+        "additionalProperties": true,
+        "properties": {
+          "descripcion": { "type": "string" },
+          "input": { "type": ["object", "array"] },
+          "output": { "type": ["object", "array", "string", "number", "boolean", "null"] }
+        }
+      }
+    },
+    "test_fixtures": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "historial": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["version", "fecha", "cambio"],
+        "properties": {
+          "version": { "type": "string" },
+          "fecha": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+          "cambio": { "type": "string" },
+          "autor": { "type": "string" }
+        }
+      }
+    },
+    "referencias_cruzadas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "deprecated_por": {
+      "type": "string",
+      "pattern": "^RN-[0-9]{3}$",
+      "description": "Si estado=deprecated, ID de la regla que la reemplaza"
+    },
+    "fecha_deprecation": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    }
+  }
+}

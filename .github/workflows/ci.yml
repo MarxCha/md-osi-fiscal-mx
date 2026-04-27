@@ -29,14 +29,26 @@ jobs:
 
       - name: Validate reglas against schema
         run: |
-          for f in spec/reglas/*.yaml; do
+          shopt -s nullglob
+          files=(spec/reglas/*.yaml)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No reglas YAML found yet (1.0.0-rc1 placeholder) — skipping"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
             echo "Validating $f"
             check-jsonschema --schemafile spec/schemas/regla.schema.json "$f"
           done
 
       - name: Validate domains against schema
         run: |
-          for f in spec/domains/*.yaml; do
+          shopt -s nullglob
+          files=(spec/domains/*.yaml)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No domains YAML found yet (1.0.0-rc1 placeholder) — skipping"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
             echo "Validating $f"
             check-jsonschema --schemafile spec/schemas/domain.schema.json "$f"
           done
@@ -57,7 +69,14 @@ jobs:
         run: pip install yamllint
 
       - name: Run yamllint
-        run: yamllint -c .yamllint.yml spec/
+        run: |
+          shopt -s nullglob
+          yaml_files=(spec/**/*.yaml spec/**/*.yml)
+          if [ ${#yaml_files[@]} -eq 0 ]; then
+            echo "No YAML files in spec/ yet — skipping yamllint"
+            exit 0
+          fi
+          yamllint -c .yamllint.yml spec/
 
   test-fixtures:
     name: Run fixture tests

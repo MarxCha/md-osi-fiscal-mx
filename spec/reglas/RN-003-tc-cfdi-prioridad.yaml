@@ -1,0 +1,99 @@
+id: RN-003
+nombre: "Tipo de cambio del CFDI tiene prioridad sobre TC del banco"
+version: "1.0.0"
+estado: stable
+descripcion: >
+  Cuando un CFDI en moneda extranjera se cobra/paga, el tipo de cambio (TC)
+  reportado en el atributo TipoCambio del CFDI tiene prioridad absoluta
+  sobre cualquier TC del movimiento bancario o el TC DOF del día. Esto
+  garantiza consistencia con el monto fiscalmente declarado.
+base_legal:
+  - ley: CFF
+    articulo: 20
+    parrafo: 3
+    texto: >
+      "Para determinar las contribuciones y sus accesorios se considerará el
+      tipo de cambio a que se haya adquirido la moneda extranjera de que se
+      trate y, en caso de no haber adquisición, se estará al tipo de cambio
+      que el Banco de México publique en el Diario Oficial..."
+  - rmf:
+      referencia: "2.1.7"
+ambito:
+  - iva_cobrado
+  - iva_pagado
+inputs:
+  - nombre: cfdi.moneda
+    tipo: string
+  - nombre: cfdi.tipo_cambio
+    tipo: decimal
+    descripcion: "Atributo TipoCambio del CFDI (default 1.0000 si moneda=MXN)"
+  - nombre: movimiento_banco.tipo_cambio
+    tipo: decimal
+    descripcion: "TC del banco en el movimiento de pago (puede diferir)"
+outputs:
+  - nombre: tc_aplicable
+    tipo: decimal
+    descripcion: "TC que debe usar el motor para convertir a MXN"
+  - nombre: fuente_tc
+    tipo: enum
+    valores: ["cfdi", "banco_fallback", "dof_fallback"]
+condiciones: |
+  Si cfdi.moneda == "MXN":
+    tc_aplicable = 1.0000
+    fuente_tc = "cfdi"
+
+  Si cfdi.moneda != "MXN" Y cfdi.tipo_cambio > 0:
+    tc_aplicable = cfdi.tipo_cambio
+    fuente_tc = "cfdi"
+
+  Si cfdi.moneda != "MXN" Y cfdi.tipo_cambio en (null, 0):
+    tc_aplicable = movimiento_banco.tipo_cambio (si existe)
+    fuente_tc = "banco_fallback"
+    advertencia: "Solo aplicar si el CFDI no trae TC válido — caso raro
+                  que requiere escalación al asesor fiscal del cliente."
+
+  Última opción si nada existe: TC DOF del día con fuente_tc = "dof_fallback".
+ejemplos:
+  - descripcion: "CFDI USD con TC propio"
+    input:
+      cfdi:
+        moneda: "USD"
+        tipo_cambio: "20.5000"
+      movimiento_banco:
+        tipo_cambio: "20.6500"
+    output:
+      tc_aplicable: "20.5000"
+      fuente_tc: "cfdi"
+  - descripcion: "CFDI MXN — TC siempre 1"
+    input:
+      cfdi:
+        moneda: "MXN"
+        tipo_cambio: "1.0000"
+    output:
+      tc_aplicable: "1.0000"
+      fuente_tc: "cfdi"
+  - descripcion: "CFDI USD sin TC — fallback al banco"
+    input:
+      cfdi:
+        moneda: "USD"
+        tipo_cambio: "0"
+      movimiento_banco:
+        tipo_cambio: "20.6500"
+    output:
+      tc_aplicable: "20.6500"
+      fuente_tc: "banco_fallback"
+test_fixtures:
+  - tests/fixtures/RN-003/case-1-cfdi-tc-prioritario.json
+  - tests/fixtures/RN-003/case-2-mxn-tc-1.json
+  - tests/fixtures/RN-003/case-3-fallback-banco.json
+historial:
+  - version: "1.0.0"
+    fecha: "2026-04-27"
+    cambio: "Regla inicial migrada de cfdi-motor REGLAS-NEGOCIO.md RN-003."
+    autor: "Marx Chávez"
+referencias_cruzadas:
+  - cfdi-motor: "REGLAS-NEGOCIO.md#RN-003"
+tags:
+  - tipo-cambio
+  - moneda-extranjera
+  - prioridad

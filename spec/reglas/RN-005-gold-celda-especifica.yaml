@@ -1,0 +1,104 @@
+id: RN-005
+nombre: "Gold standard se define a celda específica en el papel SAT"
+version: "1.0.0"
+estado: stable
+descripcion: >
+  La validación motor↔gold no se hace contra "el total del periodo" en
+  abstracto, sino contra una celda específica del papel SAT del cliente
+  (ej. "Casilla A1 del Anexo 1 de la Declaración Mensual de IVA, Ene 2026").
+  Esta precisión es necesaria para que diff $0.00 sea verificable.
+base_legal:
+  - base_practica: >
+      Convención operativa MD Consultoría establecida con Veolia (DEC-014):
+      el motor cobrado v2.0 produce un papel periódico (mes/año) cuya
+      celda totalizadora es comparable byte-a-byte (al centavo) con el
+      gold standard del despacho fiscal del cliente. Sin esta precisión, el
+      criterio "diff $0.00" es ambiguo.
+  - rmf:
+      referencia: "2.4.5"
+    texto: >
+      "Las personas morales calcularán el impuesto al valor agregado del
+      período de pago provisional aplicando la tasa correspondiente..."
+ambito:
+  - iva_cobrado
+  - iva_pagado
+inputs:
+  - nombre: cliente_rfc
+    tipo: string
+  - nombre: anio
+    tipo: integer
+  - nombre: mes
+    tipo: integer
+  - nombre: papel.tipo
+    tipo: enum
+    valores: ["iva_cobrado", "iva_pagado", "iva_acreditable"]
+  - nombre: gold.celda_id
+    tipo: string
+    descripcion: "Identificador de la celda del papel SAT del cliente (ej. 'A1', 'A2')"
+  - nombre: gold.valor_esperado
+    tipo: decimal
+outputs:
+  - nombre: comparable
+    tipo: boolean
+  - nombre: diff
+    tipo: decimal
+condiciones: |
+  Para cada (cliente_rfc, anio, mes, papel.tipo) en certificación:
+    1. Identificar gold.celda_id en el papel SAT del cliente
+       (ej. Veolia VME9307222H2 ene 2026: papel iva_cobrado, celda A1
+       = $1,476,274.21)
+    2. Motor produce valor_motor para esa celda
+    3. diff = abs(valor_motor - gold.valor_esperado)
+    4. Comparable: diff <= $0.005 (medio centavo, redondeo bancario)
+
+  Cualquier diff fuera de tolerancia es HALLAZGO, no bug. Documentar en
+  hoja de hallazgos del motor correspondiente y escalar.
+
+  No-comparable si:
+    - El cliente no tiene gold definido para ese (anio, mes, papel).
+    - La celda gold.celda_id no se mapea a un campo del papel motor.
+ejemplos:
+  - descripcion: "Veolia ene 2026 cobrado — diff 0 (gold conocido)"
+    input:
+      cliente_rfc: "VME9307222H2"
+      anio: 2026
+      mes: 1
+      papel:
+        tipo: "iva_cobrado"
+      gold:
+        celda_id: "A1"
+        valor_esperado: "1476274.21"
+      valor_motor: "1476274.21"
+    output:
+      comparable: true
+      diff: "0.00"
+  - descripcion: "Diff fuera de tolerancia — hallazgo, no bug"
+    input:
+      cliente_rfc: "VME9307222H2"
+      anio: 2026
+      mes: 2
+      papel:
+        tipo: "iva_cobrado"
+      gold:
+        celda_id: "A1"
+        valor_esperado: "1500000.00"
+      valor_motor: "1499999.50"
+    output:
+      comparable: true
+      diff: "0.50"
+test_fixtures:
+  - tests/fixtures/RN-005/case-1-veolia-ene-2026.json
+  - tests/fixtures/RN-005/case-2-diff-hallazgo.json
+  - tests/fixtures/RN-005/case-3-no-gold-definido.json
+historial:
+  - version: "1.0.0"
+    fecha: "2026-04-27"
+    cambio: "Regla inicial — formaliza convención certificación motor v2.0 cfdi-motor."
+    autor: "Marx Chávez"
+referencias_cruzadas:
+  - cfdi-motor: "DEC-014 Veolia"
+  - cfdi-motor: "REGLAS-NEGOCIO.md (motor v2.0 enterprise)"
+tags:
+  - certificacion
+  - gold-standard
+  - veolia-derivada

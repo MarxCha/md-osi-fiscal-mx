@@ -1,0 +1,94 @@
+id: iva_cobrado
+nombre: "IVA Cobrado (papel cobrado)"
+version: "1.0.0"
+descripcion: >
+  Dominio semántico que cubre el cálculo y verificación del IVA cobrado por
+  un contribuyente en un periodo (mes calendario). Es el papel central para
+  declaraciones provisionales mensuales (Art. 5 LIVA + RMF 2.5.7).
+terminos:
+  - id: deduccion_autorizada
+    nombre: "Deducción autorizada"
+    tipo: concepto
+    definicion: >
+      Concepto erogado por el contribuyente que cumple los requisitos del
+      Art. 27 LISR (deducible) Y del Art. 5 LIVA (acreditable). Toda
+      deducción autorizada produce ingreso fiscal vía menor base gravable.
+    base_legal:
+      - ley: LISR
+        articulo: 27
+      - ley: LIVA
+        articulo: 5
+    sinonimos: ["gasto deducible", "egreso autorizado"]
+    antonimos: ["gasto no deducible", "no deducible"]
+
+  - id: ingreso_acumulable
+    nombre: "Ingreso acumulable"
+    tipo: concepto
+    definicion: >
+      Cantidad recibida (en efectivo, bienes, servicios o crédito) que el
+      contribuyente debe sumar a su base gravable para ISR. Para IVA, se
+      reconoce al efectivamente cobrado.
+    base_legal:
+      - ley: LISR
+        articulo: 16
+      - ley: LIVA
+        articulo: 1-B
+    sinonimos: ["ingreso gravable", "ingreso reconocido"]
+
+  - id: iva_cobrado
+    nombre: "IVA cobrado"
+    tipo: monto
+    definicion: >
+      Monto de IVA trasladado por el contribuyente que ya fue
+      efectivamente cobrado en el periodo (mes), determinado por el banco
+      como pivote (RN-012). NO incluye IVA de CFDIs PPD pendientes de cobro.
+    base_legal:
+      - ley: LIVA
+        articulo: 1-B
+      - ley: LIVA
+        articulo: 5
+    sinonimos: ["IVA trasladado cobrado"]
+    antonimos: ["IVA pendiente de cobro", "IVA por cobrar"]
+
+  - id: iva_acreditable
+    nombre: "IVA acreditable"
+    tipo: monto
+    definicion: >
+      IVA pagado a proveedores que el contribuyente puede acreditar contra
+      su IVA cobrado. Requiere que el gasto sea estrictamente indispensable
+      y esté efectivamente pagado.
+    base_legal:
+      - ley: LIVA
+        articulo: 5
+      - ley: LIVA
+        articulo: 5-D
+    sinonimos: ["IVA por acreditar", "IVA pagado deducible"]
+
+  - id: operacion_real_material
+    nombre: "Operación real, material y coherente"
+    tipo: concepto
+    definicion: >
+      Operación que cumple el estándar de materialidad introducido por la
+      Reforma CFF 2026 — debe existir evidencia documental (contrato, foto,
+      bitácora, correo) que acredite que el bien/servicio existió, fue
+      efectivamente recibido, y guarda coherencia con la actividad del
+      contribuyente. Sin materialidad, el SAT puede negar deducibilidad
+      vía Art. 69-B Bis.
+    base_legal:
+      - ley: CFF
+        articulo: 69-B
+      - ley: CFF
+        articulo: 69-B Bis
+    sinonimos: ["operación con materialidad", "operación efectiva"]
+    antonimos: ["operación simulada", "operación sin sustancia"]
+    ejemplos:
+      - "Servicio de consultoría con minutas, entregables y bitácora documentada"
+      - "Compra de inventario con folio de almacén y foto de recepción"
+      - "(Anti-ejemplo) Factura por servicio sin contrato ni evidencia documental"
+
+reglas_relacionadas:
+  - RN-001
+  - RN-002
+  - RN-003
+  - RN-004
+  - RN-005

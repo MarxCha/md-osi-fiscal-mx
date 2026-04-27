@@ -9,6 +9,13 @@ versionado [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- Implementación de referencia Python (`implementations/python/`) con
+  `load_regla(id)`, `list_reglas(estado)`, `load_domain(id)`. Pydantic v2 +
+  pyyaml. Pip-installable como `md-osi-fiscal`.
+- Tests `tests/test_regla_loading.py` (9 pasan): valida los 5 RN + dominio
+  iva_cobrado + referencias cruzadas.
+
 ### Pendiente
 - Reglas RN-006..RN-022 (cierre Fase 1, Sprint 3 Escudo Fiscal)
 - Dominios `isr`, `diot`, `nomina`, `materialidad`

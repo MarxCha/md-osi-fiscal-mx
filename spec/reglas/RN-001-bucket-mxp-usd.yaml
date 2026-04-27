@@ -1,0 +1,80 @@
+id: RN-001
+nombre: "Bucket MXP/USD por moneda CFDI"
+version: "1.0.0"
+estado: stable
+descripcion: >
+  Clasifica cada CFDI en uno de dos buckets de moneda: MXP (pesos mexicanos)
+  o USD (genérico para cualquier moneda extranjera). Es la regla raíz para
+  que el motor cobrado/pagado agrupe valores correctamente y aplique tipo de
+  cambio CFDI cuando aplique (ver RN-003).
+base_legal:
+  - ley: LIVA
+    articulo: 5
+    fraccion: I
+    texto: >
+      "El impuesto al valor agregado se calculará aplicando a los valores que
+      señala esta Ley, la tasa que en cada caso corresponda."
+  - ley: CFF
+    articulo: 20
+    parrafo: 1
+    texto: >
+      "Las contribuciones y sus accesorios se causarán y pagarán en moneda
+      nacional. Los pagos que deban efectuarse en el extranjero se podrán
+      realizar en la moneda del país de que se trate."
+ambito:
+  - iva_cobrado
+  - iva_pagado
+inputs:
+  - nombre: cfdi.moneda
+    tipo: string
+    descripcion: "Código ISO 4217 del CFDI (MXN, USD, EUR, ...)"
+outputs:
+  - nombre: bucket
+    tipo: enum
+    valores: ["MXP", "USD"]
+    descripcion: "Categoría agregada del CFDI para reportes consolidados"
+condiciones: |
+  Si moneda == "MXN":
+    bucket = "MXP"
+  En cualquier otro caso (incluyendo XXX, indefinido, USD, EUR, ...):
+    bucket = "USD"
+
+  Justificación: a nivel reporte fiscal, MD Consultoría ha decidido tratar
+  toda divisa extranjera bajo un solo bucket "USD genérico" porque las
+  declaraciones SAT aceptan UN solo TC CFDI por moneda y la representación
+  agregada se hace en pesos vía RN-003.
+ejemplos:
+  - descripcion: "CFDI emitido en pesos mexicanos"
+    input:
+      moneda: "MXN"
+      total: "1160.00"
+    output:
+      bucket: "MXP"
+  - descripcion: "CFDI emitido en dólares estadounidenses"
+    input:
+      moneda: "USD"
+      total: "100.00"
+    output:
+      bucket: "USD"
+  - descripcion: "CFDI en euros (raro pero existe en exportaciones)"
+    input:
+      moneda: "EUR"
+      total: "85.00"
+    output:
+      bucket: "USD"
+test_fixtures:
+  - tests/fixtures/RN-001/case-1-mxn.json
+  - tests/fixtures/RN-001/case-2-usd.json
+  - tests/fixtures/RN-001/case-3-eur-fallback.json
+historial:
+  - version: "1.0.0"
+    fecha: "2026-04-27"
+    cambio: "Regla inicial migrada de cfdi-motor REGLAS-NEGOCIO.md RN-001."
+    autor: "Marx Chávez"
+referencias_cruzadas:
+  - cfdi-motor: "REGLAS-NEGOCIO.md#RN-001"
+  - documento_origen: "VEOLIA_DEC-014"
+tags:
+  - moneda
+  - bucket
+  - veolia-derivada

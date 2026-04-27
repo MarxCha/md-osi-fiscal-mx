@@ -1,0 +1,78 @@
+id: RN-002
+nombre: "NCs no se deducen del cobrado por separado"
+version: "1.0.0"
+estado: stable
+descripcion: >
+  Las notas de crédito (CFDIs tipo E que cancelan o reducen un cobro previo)
+  NO se restan del IVA cobrado en el motor por una vía paralela. Se aplican
+  ya implícitamente al recalcular el monto neto cobrado del CFDI relacionado.
+  Restarlas dos veces (una por NC, otra al reconciliar bancario) produce
+  doble conteo y reduce artificialmente el IVA reportado.
+base_legal:
+  - ley: LIVA
+    articulo: 7
+    parrafo: 1
+    texto: >
+      "El contribuyente que reciba la devolución de bienes enajenados,
+      otorgue descuentos o bonificaciones, o devuelva los anticipos o los
+      depósitos recibidos, con motivo de la realización de actividades
+      gravadas por esta Ley, deducirá en la siguiente o siguientes
+      declaraciones de pagos provisionales el monto de dichos conceptos del
+      valor de los actos o actividades gravados que les corresponda..."
+  - rmf:
+      referencia: "2.7.1.43"
+ambito:
+  - iva_cobrado
+inputs:
+  - nombre: cfdi.tipo_comprobante
+    tipo: enum
+    valores: ["I", "E", "T", "P", "N"]
+  - nombre: cfdi.cfdi_relacionado_uuid
+    tipo: string
+    descripcion: "UUID del CFDI original (presente solo en tipo E)"
+outputs:
+  - nombre: cuenta_separadamente
+    tipo: boolean
+    descripcion: "Si true, se cuenta como ajuste separado. Para NCs DEBE ser false."
+condiciones: |
+  Si cfdi.tipo_comprobante == "E" Y cfdi.cfdi_relacionado_uuid != null:
+    cuenta_separadamente = false
+    accion: "Aplicar la NC al CFDI relacionado y recalcular monto neto.
+             NO sumar/restar NC al total cobrado del periodo."
+
+  Si cfdi.tipo_comprobante == "I":
+    cuenta_separadamente = true (caso normal — se cuenta el cobro)
+
+  Riesgo si se ignora: doble descuento del IVA. El motor de cobrado de
+  cfdi-motor v1.2.1+ aplica esta regla automáticamente al construir el papel.
+ejemplos:
+  - descripcion: "NC que reduce un cobro previo"
+    input:
+      tipo_comprobante: "E"
+      cfdi_relacionado_uuid: "aaaa-bbbb-cccc-dddd"
+      monto: "100.00"
+    output:
+      cuenta_separadamente: false
+  - descripcion: "Ingreso normal — se cuenta"
+    input:
+      tipo_comprobante: "I"
+      cfdi_relacionado_uuid: null
+      monto: "1160.00"
+    output:
+      cuenta_separadamente: true
+test_fixtures:
+  - tests/fixtures/RN-002/case-1-nc-aplica.json
+  - tests/fixtures/RN-002/case-2-ingreso-normal.json
+  - tests/fixtures/RN-002/case-3-nc-sin-relacionado.json
+historial:
+  - version: "1.0.0"
+    fecha: "2026-04-27"
+    cambio: "Regla inicial migrada de cfdi-motor REGLAS-NEGOCIO.md RN-002 (D-010)."
+    autor: "Marx Chávez"
+referencias_cruzadas:
+  - cfdi-motor: "REGLAS-NEGOCIO.md#RN-002"
+  - decision_origen: "D-010 cfdi-motor"
+tags:
+  - notas-de-credito
+  - doble-conteo
+  - cobrado

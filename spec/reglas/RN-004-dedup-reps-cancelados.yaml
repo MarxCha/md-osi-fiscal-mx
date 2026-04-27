@@ -1,0 +1,99 @@
+id: RN-004
+nombre: "Deduplicar REPs cancelados al construir papel cobrado"
+version: "1.0.0"
+estado: stable
+descripcion: >
+  Los REPs (Recibos Electrónicos de Pago, complemento pagos 2.0) que el SAT
+  marca como cancelados deben deduplicarse del cálculo del papel cobrado.
+  Si el contribuyente emite REP-A (cancelado), luego REP-B (vigente) por
+  el mismo pago, contar ambos infla artificialmente el cobrado.
+base_legal:
+  - ley: LIVA
+    articulo: 1-B
+    texto: >
+      "Para los efectos de esta Ley se consideran efectivamente cobradas las
+      contraprestaciones cuando se reciban en efectivo, en bienes o en
+      servicios..."
+  - rmf:
+      referencia: "2.7.1.32"
+    texto: >
+      "Cancelación de comprobantes fiscales digitales por Internet — el
+      receptor debe ser notificado y aceptar/rechazar la cancelación..."
+ambito:
+  - iva_cobrado
+inputs:
+  - nombre: rep.uuid
+    tipo: string
+  - nombre: rep.estatus_sat
+    tipo: enum
+    valores: ["vigente", "cancelado", "no_encontrado", "pendiente"]
+  - nombre: rep.cfdi_relacionado_uuid
+    tipo: string
+  - nombre: rep.fecha_pago
+    tipo: datetime
+  - nombre: rep.monto
+    tipo: decimal
+outputs:
+  - nombre: incluir_en_papel
+    tipo: boolean
+condiciones: |
+  Si rep.estatus_sat == "cancelado":
+    incluir_en_papel = false
+    razon: "REP cancelado — no se cuenta para cobrado"
+
+  Si rep.estatus_sat == "vigente":
+    incluir_en_papel = true
+
+  Si existe REP-X cancelado Y REP-Y vigente con mismo cfdi_relacionado_uuid
+  y mismo (fecha_pago, monto):
+    Solo incluir REP-Y (el vigente).
+    Nunca dos REPs ambos vigentes para el mismo pago — eso es error de
+    facturación que debe escalarse al cliente.
+
+  Caso edge "no_encontrado" o "pendiente":
+    incluir_en_papel = pendiente
+    accion: "Re-consultar VerificaSolicitud SAT antes de cierre fiscal"
+ejemplos:
+  - descripcion: "REP cancelado se omite"
+    input:
+      uuid: "rep-aaa"
+      estatus_sat: "cancelado"
+      cfdi_relacionado_uuid: "cfdi-001"
+    output:
+      incluir_en_papel: false
+  - descripcion: "REP vigente se incluye"
+    input:
+      uuid: "rep-bbb"
+      estatus_sat: "vigente"
+      cfdi_relacionado_uuid: "cfdi-001"
+    output:
+      incluir_en_papel: true
+  - descripcion: "Pareja REP cancelado + vigente — cuentan solo uno (el vigente)"
+    input:
+      reps:
+        - uuid: "rep-x"
+          estatus_sat: "cancelado"
+          cfdi_relacionado_uuid: "cfdi-007"
+          monto: "5000.00"
+        - uuid: "rep-y"
+          estatus_sat: "vigente"
+          cfdi_relacionado_uuid: "cfdi-007"
+          monto: "5000.00"
+    output:
+      reps_incluidos: ["rep-y"]
+      total_aportado: "5000.00"
+test_fixtures:
+  - tests/fixtures/RN-004/case-1-rep-cancelado.json
+  - tests/fixtures/RN-004/case-2-rep-vigente.json
+  - tests/fixtures/RN-004/case-3-pareja-dedup.json
+historial:
+  - version: "1.0.0"
+    fecha: "2026-04-27"
+    cambio: "Regla inicial migrada de cfdi-motor REGLAS-NEGOCIO.md RN-004."
+    autor: "Marx Chávez"
+referencias_cruzadas:
+  - cfdi-motor: "REGLAS-NEGOCIO.md#RN-004"
+tags:
+  - rep
+  - deduplicacion
+  - cancelacion
